@@ -1,10 +1,10 @@
-**FINMATE User Register**
+**FINMATE User Login**
 ----
-  User registration.
+  User login.
 
 * **URL**
 
-  /v1/user/register
+  /v1/user/login
 
 * **Method:**
 
@@ -14,17 +14,10 @@
 
         {
             "email": "zaki.afrani@gmail.com",
-            "name": "Muhammad Zaki Al-Afrani",
             "password": "6542b775e3263c27e321b929f52fc6e0",
-            "gender": 1,
-            "birth_date": "2006-01-02T15:04:05Z",
-            "nik": "12345678903545",
-            "msisdn": "024456647647"
         }
 
 
-    * birth_date is timestamp with RFC3339 format
-    * gender is 1 for male, 2 for female
     * password is encrypted by md5
 
 * **Success Response:**
@@ -39,7 +32,9 @@
             "gender": 1,
             "birth_date": "2006-01-02T15:04:05Z",
             "nik": "12345678903545",
+            "nik_valid": 1,
             "msisdn": "024456647647"
+            "create_time": "2006-01-02T15:04:05Z"
         }
 
 * **Error Response:**
@@ -54,4 +49,4 @@
 
 * **Sample Call:**
 
-  `curl -X POST -H "Content-Type: application/json" -d '{"email": "zaki.afrani@gmail.com", "name": "Muhammad Zaki Al-Afrani", "password": "6542b775e3263c27e321b929f52fc6e0", "gender": 1, "birth_date": "2006-01-02T15:04:05Z07:00", "nik": "12345678903545", "msisdn": "024456647647"}' http://localhost/v1/user/register`
+  `curl -X POST -H "Content-Type: application/json" -d '{"email": "zaki.afrani@gmail.com", "password": "6542b775e3263c27e321b929f52fc6e0"}' http://localhost/v1/user/login`

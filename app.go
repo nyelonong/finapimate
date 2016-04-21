@@ -30,7 +30,8 @@ func init() {
 func main() {
 	fmt.Println("FINMATE STARTED")
 
-	http.HandleFunc("/v1/register", UserModule.RegisterHandler)
+	http.HandleFunc("/v1/user/register", UserModule.RegisterHandler)
+	http.HandleFunc("/v1/user/login", UserModule.LoginHandler)
 
 	log.Fatal(http.ListenAndServe(":8005", nil))
 }
