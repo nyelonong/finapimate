@@ -20,7 +20,9 @@
             "nik": "12345678903545",
             "msisdn": "024456647647"
         }
-<i>birth_date is timestamp with RFC3339 format</i>
+
+
+        * birth_date is timestamp with RFC3339 format
 
 * **Success Response:**
 
