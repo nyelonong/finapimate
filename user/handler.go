@@ -85,3 +85,28 @@ func (um *UserModule) SearchFriendHandler(res http.ResponseWriter, req *http.Req
 
 	jsonapi.SuccessWriter(res, datas)
 }
+
+func (um *UserModule) AddFriendshandler(res http.ResponseWriter, req *http.Request) {
+	var data []UserRelation
+
+	body, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		fmt.Println(err)
+		jsonapi.ErrorsWriter(res, 400, "Invalid Body Request.")
+		return
+	}
+
+	if err = json.Unmarshal([]byte(body), &data); err != nil {
+		fmt.Println(err)
+		jsonapi.ErrorsWriter(res, 400, "Invalid JSON Request.")
+		return
+	}
+
+	if err := um.AddFriends(data); err != nil {
+		fmt.Println(err)
+		jsonapi.ErrorsWriter(res, 400, "Failed add friends.")
+		return
+	}
+
+	jsonapi.SuccessWriter(res, data)
+}

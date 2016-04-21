@@ -14,7 +14,7 @@
 
         {
             "email": "zaki.afrani@gmail.com",
-            "msisdn": "232437687686",
+            "msisdn": "232437687686"
         }
 
 * **Success Response:**
@@ -31,7 +31,7 @@
                 "birth_date": "2006-01-02T15:04:05Z",
                 "nik": "12345678903545",
                 "nik_valid": 1,
-                "msisdn": "024456647647"
+                "msisdn": "024456647647",
                 "create_time": "2006-01-02T15:04:05Z"
             },
             {
@@ -42,7 +42,7 @@
                 "birth_date": "2006-01-02T15:04:05Z",
                 "nik": "12345678903545",
                 "nik_valid": 1,
-                "msisdn": "024456647647"
+                "msisdn": "024456647647",
                 "create_time": "2006-01-02T15:04:05Z"
             }
         ]

@@ -14,7 +14,7 @@
 
         {
             "email": "zaki.afrani@gmail.com",
-            "password": "6542b775e3263c27e321b929f52fc6e0",
+            "password": "6542b775e3263c27e321b929f52fc6e0"
         }
 
 

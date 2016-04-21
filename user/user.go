@@ -12,6 +12,9 @@ import (
 const (
 	GENDER_MALE   int = 1
 	GENDER_FEMALE int = 2
+
+	RELATION_REQUEST  int = 1
+	RELATION_APPROVED int = 2
 )
 
 type UserModule struct {
@@ -25,18 +28,27 @@ func NewUserModule(db *sqlx.DB) *UserModule {
 }
 
 type User struct {
-	ID              int64     `json:"user_id,omitempty"      db:"user_id"`
-	Email           string    `json:"email"        db:"email"`
-	Name            string    `json:"name"         db:"name"`
-	Password        string    `json:"password"     db:"password"`
-	Gender          int       `json:"gender"       db:"gender"`
-	BirthDate       time.Time `json:"birth_date"   db:"birth_date"`
-	NIK             string    `json:"nik"          db:"nik"`
-	NIKValid        int       `json:"nik_valid,omitempty"    db:"nik_valid"`
-	MSISDN          string    `json:"msidn"        db:"msisdn"`
-	ThresholdAmount float64   `json:"th_amount"    db:"th_amount"`
-	CreateTime      time.Time `json:"create_time,omitempty"  db:"create_time"`
-	Photo           string    `json:"photo,omitempty"        db:"photo"`
+	ID              int64     `json:"user_id,omitempty"        db:"user_id"`
+	Email           string    `json:"email"                    db:"email"`
+	Name            string    `json:"name"                     db:"name"`
+	Password        string    `json:"password"                 db:"password"`
+	Gender          int       `json:"gender"                   db:"gender"`
+	BirthDate       time.Time `json:"birth_date"               db:"birth_date"`
+	NIK             string    `json:"nik"                      db:"nik"`
+	NIKValid        int       `json:"nik_valid,omitempty"      db:"nik_valid"`
+	MSISDN          string    `json:"msidn"                    db:"msisdn"`
+	ThresholdAmount float64   `json:"th_amount"                db:"th_amount"`
+	CreateTime      time.Time `json:"create_time,omitempty"    db:"create_time"`
+	Photo           string    `json:"photo,omitempty"          db:"photo"`
+}
+
+type UserRelation struct {
+	FriendID     int64     `json:"friend_id,omitempty"     db:"friend_id"`
+	UserIDA      int64     `json:"user_id_a"               db:"user_id_a"`
+	UserIDB      int64     `json:"user_id_b"               db:"user_id_b"`
+	Status       int       `json:"status,omitempty"        db:"status"`
+	CreateTime   time.Time `json:"create_time,omitempty"   db:"create_time"`
+	ApprovedTime time.Time `json:"approved_time"           db:"approved_time"`
 }
 
 func (um *UserModule) UserRegister(user User) error {
@@ -198,4 +210,53 @@ func (um *UserModule) SearchFriend(user User) ([]User, error) {
 	}
 
 	return data, nil
+}
+
+func (um *UserModule) AddFriends(ur []UserRelation) error {
+	tx, err := um.DBConn.Beginx()
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	for _, usr := range ur {
+		usr.Status = RELATION_REQUEST
+
+		if err := usr.Insert(tx); err != nil {
+			log.Println(err)
+			if err := tx.Rollback(); err != nil {
+				log.Println(err)
+			}
+			return err
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		log.Println(err)
+		return err
+	}
+
+	return nil
+}
+
+func (ur *UserRelation) Insert(tx *sqlx.Tx) error {
+	sqlQuery := `
+        INSERT INTO fm_user (
+            user_id_a,
+            user_id_b,
+            status,
+            create_time
+        ) VALUES (
+            :user_id_a,
+            :user_id_b,
+            CURRENT_TIMESTAMP
+        )
+    `
+	_, err := tx.NamedExec(sqlQuery, ur)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	return nil
 }
