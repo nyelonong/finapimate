@@ -11,6 +11,7 @@
   `POST`
 
 * **JSON Body**
+
         {
             "email": "zaki.afrani@gmail.com",
             "name": "Muhammad Zaki Al-Afrani",
@@ -28,6 +29,7 @@
 
   * **Code:** 200 <br />
     **Content:**
+    
         {
             "email": "zaki.afrani@gmail.com",
             "name": "Muhammad Zaki Al-Afrani",
