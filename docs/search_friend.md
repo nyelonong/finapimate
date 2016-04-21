@@ -4,7 +4,7 @@
 
 * **URL**
 
-  /v1/user/searchfriend
+  /v1/user/friends/search
 
 * **Method:**
 
@@ -59,4 +59,4 @@
 
 * **Sample Call:**
 
-  `curl -X POST -H "Content-Type: application/json" -d '{"email": "zaki.afrani@gmail.com", "msisdn": "03483457984584"}' http://localhost/v1/user/searchfriend`
+  `curl -X POST -H "Content-Type: application/json" -d '{"email": "zaki.afrani@gmail.com", "msisdn": "03483457984584"}' http://localhost/v1/user/friends/search`

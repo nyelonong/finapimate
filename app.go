@@ -32,7 +32,10 @@ func main() {
 
 	http.HandleFunc("/v1/user/register", UserModule.RegisterHandler)
 	http.HandleFunc("/v1/user/login", UserModule.LoginHandler)
-	http.HandleFunc("/v1/user/searchfriend", UserModule.SearchFriendHandler)
+	http.HandleFunc("/v1/user/friend/search", UserModule.SearchFriendHandler)
+	http.HandleFunc("/v1/user/friend/add", UserModule.AddFriendshandler)
+	http.HandleFunc("/v1/user/friend/request", UserModule.FriendRequesthandler)
+	http.HandleFunc("/v1/user/friend/approve", UserModule.ApproveFriendshandler)
 
 	log.Fatal(http.ListenAndServe(":8005", nil))
 }

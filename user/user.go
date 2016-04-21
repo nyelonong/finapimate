@@ -49,6 +49,7 @@ type UserRelation struct {
 	Status       int       `json:"status,omitempty"        db:"status"`
 	CreateTime   time.Time `json:"create_time,omitempty"   db:"create_time"`
 	ApprovedTime time.Time `json:"approved_time"           db:"approved_time"`
+	UserProfile  User      `json:"user_profile,omitempty"`
 }
 
 func (um *UserModule) UserRegister(user User) error {
@@ -254,6 +255,145 @@ func (ur *UserRelation) Insert(tx *sqlx.Tx) error {
     `
 	_, err := tx.NamedExec(sqlQuery, ur)
 	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	return nil
+}
+
+func (um *UserModule) ApproveFriends(ur []UserRelation) error {
+	tx, err := um.DBConn.Beginx()
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	for _, usr := range ur {
+		usr.Status = RELATION_APPROVED
+
+		if err := usr.Update(tx); err != nil {
+			log.Println(err)
+			if err := tx.Rollback(); err != nil {
+				log.Println(err)
+			}
+			return err
+		}
+
+		if err := usr.InsertApproved(tx); err != nil {
+			log.Println(err)
+			if err := tx.Rollback(); err != nil {
+				log.Println(err)
+			}
+			return err
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		log.Println(err)
+		return err
+	}
+
+	return nil
+}
+
+func (ur *UserRelation) Update(tx *sqlx.Tx) error {
+	sqlQuery := `
+        UPDATE
+            fm_friend
+        SET
+            status          = :status,
+            approved_time   = CURRENT_TIMESTAMP
+        WHERE friend_id = :friend_id
+    `
+	_, err := tx.NamedExec(sqlQuery, ur)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	return nil
+}
+
+func (ur *UserRelation) InsertApproved(tx *sqlx.Tx) error {
+	sqlQuery := `
+        INSERT INTO fm_user (
+            user_id_a,
+            user_id_b,
+            status,
+            create_time,
+            approved_time
+        ) VALUES (
+            :user_id_a,
+            :user_id_b,
+            CURRENT_TIMESTAMP,
+            CURRENT_TIMESTAMP
+        )
+    `
+	_, err := tx.NamedExec(sqlQuery, ur)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	return nil
+}
+
+func (um *UserModule) FriendRequest(user User) ([]UserRelation, error) {
+	data := make([]UserRelation, 0)
+
+	query := `
+        SELECT
+            friend_id,
+            user_id_a,
+            user_id_b,
+            status,
+            create_time
+        FROM fm_user
+        WHERE user_id_a = $1
+        AND status = $2
+    `
+
+	rows, err := um.DBConn.Queryx(query, user.ID, RELATION_REQUEST)
+	if err != nil {
+		log.Println(err)
+		return data, err
+	}
+
+	for rows.Next() {
+		var usr UserRelation
+		var userProfile User
+		if err := rows.StructScan(&usr); err != nil {
+			log.Println(err)
+		} else {
+			if err := userProfile.Get(um); err != nil {
+				log.Println(err)
+			} else {
+				usr.UserProfile = userProfile
+				data = append(data, usr)
+			}
+		}
+	}
+
+	return data, nil
+}
+
+func (user *User) Get(um *UserModule) error {
+	query := `
+        SELECT
+			email,
+            name,
+            gender,
+            birth_date,
+            nik,
+            nik_valid,
+            msisdn,
+            th_amount,
+            create_time
+        FROM fm_user
+        WHERE user_id = $1
+    `
+	if err := um.DBConn.Get(user, query, user.ID); err != nil {
 		log.Println(err)
 		return err
 	}

@@ -110,3 +110,54 @@ func (um *UserModule) AddFriendshandler(res http.ResponseWriter, req *http.Reque
 
 	jsonapi.SuccessWriter(res, data)
 }
+
+func (um *UserModule) ApproveFriendshandler(res http.ResponseWriter, req *http.Request) {
+	var data []UserRelation
+
+	body, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		fmt.Println(err)
+		jsonapi.ErrorsWriter(res, 400, "Invalid Body Request.")
+		return
+	}
+
+	if err = json.Unmarshal([]byte(body), &data); err != nil {
+		fmt.Println(err)
+		jsonapi.ErrorsWriter(res, 400, "Invalid JSON Request.")
+		return
+	}
+
+	if err := um.ApproveFriends(data); err != nil {
+		fmt.Println(err)
+		jsonapi.ErrorsWriter(res, 400, "Failed approve friends.")
+		return
+	}
+
+	jsonapi.SuccessWriter(res, data)
+}
+
+func (um *UserModule) FriendRequesthandler(res http.ResponseWriter, req *http.Request) {
+	var data User
+
+	body, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		fmt.Println(err)
+		jsonapi.ErrorsWriter(res, 400, "Invalid Body Request.")
+		return
+	}
+
+	if err = json.Unmarshal([]byte(body), &data); err != nil {
+		fmt.Println(err)
+		jsonapi.ErrorsWriter(res, 400, "Invalid JSON Request.")
+		return
+	}
+
+	datas, err := um.FriendRequest(data)
+	if err != nil {
+		fmt.Println(err)
+		jsonapi.ErrorsWriter(res, 400, "Failed getting friend request.")
+		return
+	}
+
+	jsonapi.SuccessWriter(res, datas)
+}
