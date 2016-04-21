@@ -162,3 +162,40 @@ func (user *User) UserLogin(um *UserModule) error {
 
 	return nil
 }
+
+func (um *UserModule) SearchFriend(user User) ([]User, error) {
+	data := make([]User, 0)
+
+	query := `
+        SELECT
+            email,
+            name,
+            gender,
+            birth_date,
+            nik,
+            nik_valid,
+            msisdn,
+            th_amount,
+            create_time
+        FROM fm_user
+        WHERE email = $1
+        OR msisdn = $2
+    `
+
+	rows, err := um.DBConn.Queryx(query, user.Email, user.MSISDN)
+	if err != nil {
+		log.Println(err)
+		return data, err
+	}
+
+	for rows.Next() {
+		var usr User
+		if err := rows.StructScan(&usr); err != nil {
+			log.Println(err)
+		} else {
+			data = append(data, usr)
+		}
+	}
+
+	return data, nil
+}

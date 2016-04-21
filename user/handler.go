@@ -59,3 +59,29 @@ func (um *UserModule) LoginHandler(res http.ResponseWriter, req *http.Request) {
 
 	jsonapi.SuccessWriter(res, data)
 }
+
+func (um *UserModule) SearchFriendHandler(res http.ResponseWriter, req *http.Request) {
+	var data User
+
+	body, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		fmt.Println(err)
+		jsonapi.ErrorsWriter(res, 400, "Invalid Body Request.")
+		return
+	}
+
+	if err = json.Unmarshal([]byte(body), &data); err != nil {
+		fmt.Println(err)
+		jsonapi.ErrorsWriter(res, 400, "Invalid JSON Request.")
+		return
+	}
+
+	datas, err := um.SearchFriend(data)
+	if err != nil {
+		fmt.Println(err)
+		jsonapi.ErrorsWriter(res, 400, "Not found.")
+		return
+	}
+
+	jsonapi.SuccessWriter(res, datas)
+}
