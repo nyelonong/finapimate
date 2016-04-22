@@ -24,6 +24,8 @@ func init() {
 		log.Fatalln(err)
 	}
 
+	log.SetFlags(log.Lshortfile)
+	
 	UserModule = user.NewUserModule(db)
 }
 
@@ -36,6 +38,7 @@ func main() {
 	http.HandleFunc("/v1/user/friend/add", UserModule.AddFriendshandler)
 	http.HandleFunc("/v1/user/friend/request", UserModule.FriendRequesthandler)
 	http.HandleFunc("/v1/user/friend/approve", UserModule.ApproveFriendshandler)
+	http.HandleFunc("/v1/user/friend/list", UserModule.ListFriendHandler)
 
 	log.Fatal(http.ListenAndServe(":8005", nil))
 }

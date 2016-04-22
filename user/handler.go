@@ -161,3 +161,28 @@ func (um *UserModule) FriendRequesthandler(res http.ResponseWriter, req *http.Re
 
 	jsonapi.SuccessWriter(res, datas)
 }
+
+// input: userid
+func (um *UserModule) ListFriendHandler(w http.ResponseWriter, r *http.Request){
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		fmt.Println(err)
+		jsonapi.ErrorsWriter(w, 400, "invalid request.")
+		return
+	}
+
+	var u User
+	if err = json.Unmarshal([]byte(body), &u); err != nil {
+		fmt.Println(err)
+		jsonapi.ErrorsWriter(w, 400, "invalid json.")
+		return
+	}
+
+	flist, err := u.ListFriend(um)
+	if err != nil {
+		fmt.Println(err)
+		jsonapi.ErrorsWriter(w, 400, "failed getting friend list.")
+	}
+
+	jsonapi.SuccessWriter(w, flist)
+}
