@@ -349,7 +349,7 @@ func (um *UserModule) FriendRequest(user User) ([]UserRelation, error) {
             user_id_b,
             status,
             create_time
-        FROM fm_user
+        FROM fm_friend
         WHERE user_id_a = $1
         AND status = $2
     `
@@ -376,6 +376,40 @@ func (um *UserModule) FriendRequest(user User) ([]UserRelation, error) {
 	}
 
 	return data, nil
+}
+
+func (u *User) ListFriend(um *UserModule) ([]User, error) {
+	// Query for user_id u.ID and only for the approved relation.
+	q := `
+		SELECT user_id_b
+		FROM fm_friend
+		WHERE
+			user_id_a = $1 AND
+			status = $2
+	`
+
+	var fids []int64
+	err := um.DBConn.Select(&fids, q, u.ID, RELATION_APPROVED)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	var flist []User
+	for _, fid := range fids {
+		f := User{
+			ID: fid,
+		}
+
+		if err = f.Get(um); err != nil {
+			log.Println(err)
+			return nil, err
+		}
+
+		flist = append(flist, f)
+	}
+
+	return flist, nil
 }
 
 func (user *User) Get(um *UserModule) error {
