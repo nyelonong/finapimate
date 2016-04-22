@@ -326,6 +326,7 @@ func (ur *UserRelation) InsertApproved(tx *sqlx.Tx) error {
         ) VALUES (
             :user_id_a,
             :user_id_b,
+            :status,
             CURRENT_TIMESTAMP,
             CURRENT_TIMESTAMP
         )
