@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"time"
+	"html/template"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/nyelonong/finapimate/oauth"
@@ -22,12 +23,14 @@ const (
 type TxModule struct {
 	DBConn     *sqlx.DB
 	UserModule *user.UserModule
+	templates *template.Template
 }
 
-func NewTxModule(db *sqlx.DB, um *user.UserModule) *TxModule {
+func NewTxModule(db *sqlx.DB, um *user.UserModule, t *template.Template) *TxModule {
 	return &TxModule{
 		DBConn:     db,
 		UserModule: um,
+		templates: t,
 	}
 }
 

@@ -1,0 +1,13 @@
+{{define "listBorrower"}}
+<html>
+	<body>
+		{{range .List}}
+		<div>
+			Borrower ID: {{.BorrowerID}}
+			LenderID: {{.LenderID}}
+			Amount: {{.Amount}}
+		</div>
+		{{end}}
+	</body>
+</html>
+{{end}}
