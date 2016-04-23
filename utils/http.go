@@ -124,6 +124,7 @@ func (r *Request) DoReq() (*[]byte, error) {
 
 	if resp.StatusCode != 200 {
 		log.Println(resp)
+		printErrorBody(resp)
 		return nil, fmt.Errorf("Status Code = %d", resp.StatusCode)
 	}
 
@@ -134,4 +135,14 @@ func (r *Request) DoReq() (*[]byte, error) {
 	}
 
 	return &contents, nil
+}
+
+func printErrorBody(resp *http.Response) {
+	content, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	log.Println(string(content))
+	return
 }
