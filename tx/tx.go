@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	STATUS_REQUEST  = 1
+	STATUS_REQUEST  = 0
 	STATUS_APPROVED = 2
 	STATUS_DECLINE  = 3
 	STATUS_PAID     = 4

@@ -1,13 +1,4 @@
-package tx
 
-import (
-	"github.com/nyelonong/finapimate/user"
-	"gopkg.in/gomail.v2"
-	"gopkg.in/robfig/cron.v2"
-	"log"
-)
-
-var emailTemplate = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -138,7 +129,7 @@ var emailTemplate = `
                 <tr>
                     <td align="center" valign="top" style="padding: 15px 0;" class="logo">
                         <!-- <a href="http://litmus.com" target="_blank"> -->
-                            <img alt="Logo" src="http://al.afrani.id/logo_icon.png" width="150" style="display: block; font-family: Helvetica, Arial, sans-serif; color: #ffffff; font-size: 16px;" border="0">
+                            <img alt="Logo" src="logo_icon.png" width="150" style="display: block; font-family: Helvetica, Arial, sans-serif; color: #ffffff; font-size: 16px;" border="0">
                         <!-- </a> -->
                     </td>
                 </tr>
@@ -215,87 +206,3 @@ var emailTemplate = `
 
 </body>
 </html>
-`
-
-type Scheduler struct {
-	format string // cron expression format.
-	cron   *cron.Cron
-	txm    *TxModule
-}
-
-func NewScheduler(f string, txm *TxModule) *Scheduler {
-	s := &Scheduler{
-		format: f,
-		txm:    txm,
-	}
-	s.start()
-
-	return s
-
-}
-
-func (s *Scheduler) start() {
-	s.cron = cron.New()
-	s.cron.AddFunc(s.format, s.notify)
-	s.cron.Start()
-	return
-}
-
-// notify needs
-func (s *Scheduler) notify() {
-	// get all user_id to notify from tx database.
-	q := `
-		SELECT lender_id, borrower_id, amount, deadline
-		FROM fm_tx
-		WHERE deadline >= CURRENT_DATE-'1 Day'::Interval
-	`
-
-	var trxs []Transaction
-	err := s.txm.DBConn.Select(&trxs, q)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	// TODO: send notification.
-	for _, trx := range trxs {
-		usr := user.User{
-			ID: trx.BorrowerID,
-		}
-		if err := usr.Get(s.txm.UserModule); err != nil {
-			log.Println(err)
-			continue
-		}
-
-		lender := user.User{
-			ID: trx.BorrowerID,
-		}
-		if err := lender.Get(s.txm.UserModule); err != nil {
-			log.Println(err)
-			continue
-		}
-
-		m := gomail.NewMessage()
-		m.SetHeader("From", "syahastatan@yahoo.com")
-		m.SetHeader("To", usr.Email)
-		m.SetHeader("Subject", "Deadline")
-		// m.SetBody("text/plain", fmt.Sprintf("Borrowed %.0f from %s, deadline %s", trx.Amount, usr.Name, time.Unix(trx.Deadline, 0)))
-		m.SetBody("text/html", emailTemplate)
-
-		d := gomail.Dialer{
-			Host:     "smtp.mail.yahoo.com",
-			Port:     465,
-			SSL:      true,
-			Username: "syahastatan@yahoo.com",
-			Password: "xxxxxx",
-		}
-
-		if err := d.DialAndSend(m); err != nil {
-			log.Println(err)
-		}
-
-		log.Println(usr)
-	}
-
-	return
-}
