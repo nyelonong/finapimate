@@ -275,10 +275,18 @@ func (tm *TxModule) ChangeStatusTx(trxs []Transaction) error {
 
 		switch trx.Status {
 		case STATUS_APPROVED:
+			lender := user.User{
+				ID: trx.LenderID,
+			}
+			if err := lender.Get(tm.UserModule); err != nil {
+				log.Println(err)
+				return err
+			}
+
 			// Debit
 			debit := EwalletPayment{
 				CompanyCode:   utils.COMPANY_CODE,
-				PrimaryID:     fmt.Sprintf("%d", trx.LenderID),
+				PrimaryID:     lender.Email,
 				TransactionID: fmt.Sprintf("%d", trx.ID),
 				ReferenceID:   fmt.Sprintf("%d-%d", trx.ID, trx.LenderID),
 				RequestDate:   time.Now().Format(time.RFC3339),
@@ -312,10 +320,18 @@ func (tm *TxModule) ChangeStatusTx(trxs []Transaction) error {
 				return err
 			}
 		case STATUS_PAID:
+			borrower := user.User{
+				ID: trx.LenderID,
+			}
+			if err := borrower.Get(tm.UserModule); err != nil {
+				log.Println(err)
+				return err
+			}
+
 			// Debit
 			debit := EwalletPayment{
 				CompanyCode:   utils.COMPANY_CODE,
-				PrimaryID:     fmt.Sprintf("%d", trx.BorrowerID),
+				PrimaryID:     borrower.Email,
 				TransactionID: fmt.Sprintf("%d", trx.ID),
 				ReferenceID:   fmt.Sprintf("%d-%d", trx.ID, trx.LenderID),
 				RequestDate:   time.Now().Format(time.RFC3339),
