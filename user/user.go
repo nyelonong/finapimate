@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/nyelonong/finapimate/utils"
 	"github.com/nyelonong/finapimate/oauth"
+	"github.com/nyelonong/finapimate/utils"
 )
 
 const (
@@ -168,6 +168,8 @@ func (user *User) Insert(tx *sqlx.Tx) error {
 		log.Println(err)
 		return err
 	}
+
+	tx.QueryRow("select CURRVAL('fm_user_user_id_seq')").Scan(&user.ID)
 
 	return nil
 }
