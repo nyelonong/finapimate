@@ -32,26 +32,26 @@ func NewTxModule(db *sqlx.DB, um *user.UserModule) *TxModule {
 }
 
 type Transaction struct {
-	ID            int64     `json:"tx_id,omitempty"       	db:"tx_id"`
-	LenderID      int64     `json:"lender_id"            	db:"lender_id"`
-	BorrowerID    int64     `json:"borrower_id"      		db:"borrower_id"`
-	Amount        float64   `json:"amount"                 	db:"amount"`
-	Deadline      int64     `json:"deadline"`
-	DeadlineValid time.Time `json:"-"          				db:"deadline"`
-	Status        int       `json:"status,omitempty"  		db:"status"`
-	Notes         string    `json:"notes,omitempty"      	db:"notes"`
-	CreateTime    time.Time `json:"create_time,omitempty"	db:"create_time"`
+	ID            int64     `json:"tx_id,omitempty" db:"tx_id"`
+	LenderID      int64     `json:"lender_id" db:"lender_id"`
+	BorrowerID    int64     `json:"borrower_id" db:"borrower_id"`
+	Amount        float64   `json:"amount" db:"amount"`
+	Deadline      int64     `json:"deadline" db:"tipuan"`
+	DeadlineValid time.Time `db:"deadline"`
+	Status        int       `json:"status,omitempty" db:"status"`
+	Notes         string    `json:"notes,omitempty" db:"notes"`
+	CreateTime    time.Time `json:"create_time,omitempty" db:"create_time"`
 	UserProfile   user.User `json:"user_profile"`
 }
 
 type EwalletPayment struct {
-	CompanyCode   string
-	PrimaryID     string
-	TransactionID string
-	ReferenceID   string
-	RequestDate   string
-	Amount        string
-	CurrencyCode  string
+	CompanyCode   string `json:"CompanyCode"`
+	PrimaryID     string `json:"PrimaryID"`
+	TransactionID string `json:"TransactionID"`
+	ReferenceID   string `json:"ReferenceID"`
+	Amount        string `json:"Amount"`
+	CurrencyCode  string `json:"CurrencyCode"`
+	RequestDate   string `json:"RequestDate"`
 }
 
 type EwalletPaymentResponse struct {
@@ -279,6 +279,12 @@ func (tm *TxModule) ChangeStatusTx(trxs []Transaction) error {
 			return err
 		}
 
+		err = trx.Get(tm)
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+
 		switch trx.Status {
 		case STATUS_APPROVED:
 			lender := user.User{
@@ -295,7 +301,7 @@ func (tm *TxModule) ChangeStatusTx(trxs []Transaction) error {
 				PrimaryID:     lender.Email,
 				TransactionID: fmt.Sprintf("%d", trx.ID),
 				ReferenceID:   fmt.Sprintf("%d-%d", trx.ID, trx.LenderID),
-				RequestDate:   time.Now().Format(time.RFC3339),
+				RequestDate:   oauth.GetTime(),
 				Amount:        fmt.Sprintf("%.2f", trx.Amount),
 				CurrencyCode:  "IDR",
 			}
@@ -313,7 +319,7 @@ func (tm *TxModule) ChangeStatusTx(trxs []Transaction) error {
 				CompanyCode:    utils.COMPANY_CODE,
 				CustomerNumber: fmt.Sprintf("%d", trx.BorrowerID),
 				TransactionID:  fmt.Sprintf("%d", trx.ID),
-				RequestDate:    time.Now().Format(time.RFC3339),
+				RequestDate:    oauth.GetTime(),
 				Amount:         fmt.Sprintf("%.2f", trx.Amount),
 				CurrencyCode:   "IDR",
 			}
@@ -340,7 +346,7 @@ func (tm *TxModule) ChangeStatusTx(trxs []Transaction) error {
 				PrimaryID:     borrower.Email,
 				TransactionID: fmt.Sprintf("%d", trx.ID),
 				ReferenceID:   fmt.Sprintf("%d-%d", trx.ID, trx.LenderID),
-				RequestDate:   time.Now().Format(time.RFC3339),
+				RequestDate:   oauth.GetTime(),
 				Amount:        fmt.Sprintf("%.2f", trx.Amount),
 				CurrencyCode:  "IDR",
 			}
@@ -358,7 +364,7 @@ func (tm *TxModule) ChangeStatusTx(trxs []Transaction) error {
 				CompanyCode:    utils.COMPANY_CODE,
 				CustomerNumber: fmt.Sprintf("%d", trx.LenderID),
 				TransactionID:  fmt.Sprintf("%d", trx.ID),
-				RequestDate:    time.Now().Format(time.RFC3339),
+				RequestDate:    oauth.GetTime(),
 				Amount:         fmt.Sprintf("%.2f", trx.Amount),
 				CurrencyCode:   "IDR",
 			}
@@ -378,6 +384,23 @@ func (tm *TxModule) ChangeStatusTx(trxs []Transaction) error {
 		return err
 	}
 
+	return nil
+}
+
+func (trx *Transaction) Get(tm *TxModule) error {
+	q := `
+		SELECT
+			lender_id,
+			borrower_id,
+			amount
+		FROM fm_tx
+		WHERE tx_id = $1
+	`
+
+	if err := tm.DBConn.Get(trx, q, trx.ID); err != nil {
+		log.Println(err)
+		return err
+	}
 	return nil
 }
 
@@ -506,7 +529,7 @@ func (top TopUp) UserTopUp(tm *TxModule) error {
 		CompanyCode:    utils.COMPANY_CODE,
 		CustomerNumber: fmt.Sprintf("%d", top.UserID),
 		TransactionID:  fmt.Sprintf("%d", time.Now().Unix()),
-		RequestDate:    time.Now().Format(time.RFC3339),
+		RequestDate:    oauth.GetTime(),
 		Amount:         fmt.Sprintf("%.2f", top.Amount),
 		CurrencyCode:   "IDR",
 	}
