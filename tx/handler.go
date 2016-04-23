@@ -198,3 +198,28 @@ func (tm *TxModule) NotifBorrowHandler(res http.ResponseWriter, req *http.Reques
 
 	jsonapi.SuccessWriter(res, datas)
 }
+
+func (tm *TxModule) TopUpHandler(res http.ResponseWriter, req *http.Request) {
+	var data TopUp
+
+	body, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		fmt.Println(err)
+		jsonapi.ErrorsWriter(res, 400, "Invalid Body Request.")
+		return
+	}
+
+	if err = json.Unmarshal([]byte(body), &data); err != nil {
+		fmt.Println(err)
+		jsonapi.ErrorsWriter(res, 400, "Invalid JSON Request.")
+		return
+	}
+
+	if err := data.UserTopUp(tm); err != nil {
+		fmt.Println(err)
+		jsonapi.ErrorsWriter(res, 400, "Failed to Login.")
+		return
+	}
+
+	jsonapi.SuccessWriter(res, data)
+}

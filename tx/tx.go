@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/nyelonong/finapimate/oauth"
 	"github.com/nyelonong/finapimate/user"
 	"github.com/nyelonong/finapimate/utils"
-	"github.com/nyelonong/finapimate/oauth"
 )
 
 const (
@@ -76,6 +76,11 @@ type EwalletTopUpResponse struct {
 	TransactionID   string
 	TopUpID         string
 	TransactionDate string
+}
+
+type TopUp struct {
+	UserID int64   `json:"user_id"`
+	Amount float64 `json:"amount"`
 }
 
 func (tm *TxModule) RequestBorrow(trxs []Transaction) error {
@@ -494,4 +499,22 @@ func (et *EwalletTopUp) TopUp() (*EwalletTopUpResponse, error) {
 	}
 
 	return &resp, nil
+}
+
+func (top TopUp) UserTopUp(tm *TxModule) error {
+	user := EwalletTopUp{
+		CompanyCode:    utils.COMPANY_CODE,
+		CustomerNumber: fmt.Sprintf("%d", top.UserID),
+		TransactionID:  fmt.Sprintf("%d", time.Now().Unix()),
+		RequestDate:    time.Now().Format(time.RFC3339),
+		Amount:         fmt.Sprintf("%.2f", top.Amount),
+		CurrencyCode:   "IDR",
+	}
+
+	if _, err := user.TopUp(); err != nil {
+		log.Println(err)
+		return err
+	}
+
+	return nil
 }
