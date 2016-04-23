@@ -69,6 +69,7 @@ func main() {
 
 	// webview.
 	http.HandleFunc("/v1/tx/notif/webview", TxModule.NotifBorrowWebviewHandler)
+	http.HandleFunc("/v1/tx/list/borrow/webview", TxModule.BorrowListWebviewHandler)
 
 	// Testing.
 	http.HandleFunc("/token", user.TestToken)
