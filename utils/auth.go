@@ -2,10 +2,10 @@ package utils
 
 import (
 	"strings"
-
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
+	"regexp"
 )
 
 const (
@@ -23,6 +23,10 @@ type Error struct {
 }
 
 func GetSignature(method, relative, accesstoken, body, timestamp string) string {
+	// remove all space.
+	re := regexp.MustCompile(" ")
+	body = re.ReplaceAllString(body, "")
+
 	// hash sha256.
 	hasher := sha256.New()
 	hasher.Write([]byte(body))

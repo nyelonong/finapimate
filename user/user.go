@@ -9,6 +9,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/nyelonong/finapimate/utils"
+	"github.com/nyelonong/finapimate/oauth"
 )
 
 const (
@@ -96,7 +97,7 @@ func (um *UserModule) UserRegister(user User) error {
 	register := EwalletRegister{
 		CustomerName:   user.Name,
 		DateOfBirth:    time.Now().Format("2006-01-02"),
-		PrimaryID:      fmt.Sprintf("%d", user.ID),
+		PrimaryID:      fmt.Sprintf("%d", user.Email),
 		MobileNumber:   user.MSISDN,
 		EmailAddress:   user.Email,
 		CompanyCode:    utils.COMPANY_CODE,
@@ -480,16 +481,24 @@ func (er *EwalletRegister) Register() (*EwalletRegisterResponse, error) {
 		log.Println(err)
 	}
 
-	now := time.Now().Format(time.RFC3339)
+	now := oauth.GetTime()
+
 	method := "POST"
 	path := "/ewallet/customers"
 
+	// get access token.
+	accessToken, err := oauth.GetAccessToken()
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
 	headers := make(map[string]string)
-	headers["Authorization"] = "Bearer ..."
+	headers["Authorization"] = "Bearer " + accessToken
 	headers["Origin"] = "tokopedia.com"
 	headers["X-BCA-Key"] = utils.API_KEY
 	headers["X-BCA-Timestamp"] = now
-	headers["X-BCA-Signature"] = utils.GetSignature(method, path, "...", string(encoded), now)
+	headers["X-BCA-Signature"] = utils.GetSignature(method, path, accessToken, string(encoded), now)
 
 	agent := utils.NewHTTPRequest()
 	agent.Url = utils.API_URL
