@@ -30,19 +30,20 @@ func NewUserModule(db *sqlx.DB) *UserModule {
 }
 
 type User struct {
-	ID              int64     `json:"user_id,omitempty"        db:"user_id"`
-	Email           string    `json:"email"                    db:"email"`
-	Name            string    `json:"name"                     db:"name"`
-	Password        string    `json:"password"                 db:"password"`
-	Gender          int       `json:"gender"                   db:"gender"`
-	BirthDate       int64     `json:"birth_date"`
-	BirthDateValid  time.Time `db:"birth_date"`
-	NIK             string    `json:"nik"                      db:"nik"`
-	NIKValid        int       `json:"nik_valid,omitempty"      db:"nik_valid"`
-	MSISDN          string    `json:"msisdn"                   db:"msisdn"`
-	ThresholdAmount float64   `json:"th_amount"                db:"th_amount"`
-	CreateTime      time.Time `json:"create_time,omitempty"    db:"create_time"`
-	Photo           string    `json:"photo,omitempty"          db:"photo"`
+	ID              int64                  `json:"user_id,omitempty"        db:"user_id"`
+	Email           string                 `json:"email"                    db:"email"`
+	Name            string                 `json:"name"                     db:"name"`
+	Password        string                 `json:"password"                 db:"password"`
+	Gender          int                    `json:"gender"                   db:"gender"`
+	BirthDate       int64                  `json:"birth_date"`
+	BirthDateValid  time.Time              `db:"birth_date"`
+	NIK             string                 `json:"nik"                      db:"nik"`
+	NIKValid        int                    `json:"nik_valid,omitempty"      db:"nik_valid"`
+	MSISDN          string                 `json:"msisdn"                   db:"msisdn"`
+	ThresholdAmount float64                `json:"th_amount"                db:"th_amount"`
+	CreateTime      time.Time              `json:"create_time,omitempty"    db:"create_time"`
+	Photo           string                 `json:"photo,omitempty"          db:"photo"`
+	Ewallet         EwalletInquiryResponse `json:"ewallet"`
 }
 
 type UserRelation struct {
@@ -68,6 +69,22 @@ type EwalletRegister struct {
 type EwalletRegisterResponse struct {
 	PrimaryID string
 	CompanyID string
+}
+
+type EwalletInquiry struct {
+	CompanyCode string
+	PrimaryID   string
+}
+
+type EwalletInquiryResponse struct {
+	PrimaryID      string
+	CustomerNumber string
+	CurrencyCode   string
+	Balance        string
+	CustomerName   string
+	DateOfBirth    string
+	MobileNumber   string
+	EmailAddress   string
 }
 
 func (um *UserModule) UserRegister(user User) error {
@@ -209,6 +226,19 @@ func (user *User) UserLogin(um *UserModule) error {
 		log.Println(err)
 		return err
 	}
+
+	usr := EwalletInquiry{
+		CompanyCode: utils.COMPANY_CODE,
+		PrimaryID:   fmt.Sprintf("%d", user.ID),
+	}
+
+	ewallet, err := usr.Inquiry()
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	user.Ewallet = *ewallet
 
 	return nil
 }
@@ -506,6 +536,44 @@ func (er *EwalletRegister) Register() (*EwalletRegisterResponse, error) {
 	}
 
 	var resp EwalletRegisterResponse
+	if err := json.Unmarshal(*body, &resp); err != nil {
+		log.Println(err)
+		var errResp utils.Error
+		_ = json.Unmarshal(*body, &errResp)
+		log.Println(errResp)
+		return nil, err
+	}
+
+	return &resp, nil
+}
+
+func (ei *EwalletInquiry) Inquiry() (*EwalletInquiryResponse, error) {
+	now := time.Now().Format(time.RFC3339)
+	method := "GET"
+	path := "/ewallet/customers" + ei.CompanyCode + "/" + ei.PrimaryID
+
+	headers := make(map[string]string)
+	headers["Authorization"] = "Bearer ..."
+	headers["Origin"] = "tokopedia.com"
+	headers["X-BCA-Key"] = utils.API_KEY
+	headers["X-BCA-Timestamp"] = now
+	headers["X-BCA-Signature"] = utils.GetSignature(method, path, "...", "", now)
+
+	agent := utils.NewHTTPRequest()
+	agent.Url = utils.API_URL
+	agent.Path = path
+	agent.Method = method
+	agent.IsJson = true
+	agent.Json = ""
+	agent.Headers = headers
+
+	body, err := agent.DoReq()
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	var resp EwalletInquiryResponse
 	if err := json.Unmarshal(*body, &resp); err != nil {
 		log.Println(err)
 		var errResp utils.Error
