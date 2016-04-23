@@ -56,5 +56,8 @@ func main() {
 	http.HandleFunc("/v1/tx/list/borrow", TxModule.BorrowListHandler)
 	http.HandleFunc("/v1/tx/list/lend", TxModule.LendListHandler)
 
+	// Testing.
+	http.HandleFunc("/token", user.TestToken)
+
 	log.Fatal(http.ListenAndServe(":8005", nil))
 }

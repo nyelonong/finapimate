@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/nyelonong/finapimate/utils/jsonapi"
+	"github.com/nyelonong/finapimate/oauth"
 )
 
 func (um *UserModule) RegisterHandler(res http.ResponseWriter, req *http.Request) {
@@ -185,4 +186,15 @@ func (um *UserModule) ListFriendHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	jsonapi.SuccessWriter(w, flist)
+}
+
+func TestToken(w http.ResponseWriter, r *http.Request){
+	token, err := oauth.GetAccessToken()
+	if err != nil {
+		fmt.Println(err)
+		jsonapi.ErrorsWriter(w, 400, "failed to access token.")
+	}
+	
+	jsonapi.SuccessWriter(w, token)
+	return
 }
