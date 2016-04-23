@@ -9,6 +9,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/nyelonong/finapimate/user"
 	"github.com/nyelonong/finapimate/utils"
+	"github.com/nyelonong/finapimate/oauth"
 )
 
 const (
@@ -400,16 +401,23 @@ func (ep *EwalletPayment) Payment() (*EwalletPaymentResponse, error) {
 		log.Println(err)
 	}
 
-	now := time.Now().Format(time.RFC3339)
+	now := oauth.GetTime()
 	method := "POST"
 	path := "/ewallet/payments"
 
+	// get access token.
+	accessToken, err := oauth.GetAccessToken()
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
 	headers := make(map[string]string)
-	headers["Authorization"] = "Bearer ..."
+	headers["Authorization"] = "Bearer " + accessToken
 	headers["Origin"] = "tokopedia.com"
 	headers["X-BCA-Key"] = utils.API_KEY
 	headers["X-BCA-Timestamp"] = now
-	headers["X-BCA-Signature"] = utils.GetSignature(method, path, "...", string(encoded), now)
+	headers["X-BCA-Signature"] = utils.GetSignature(method, path, accessToken, string(encoded), now)
 
 	agent := utils.NewHTTPRequest()
 	agent.Url = utils.API_URL
@@ -444,16 +452,23 @@ func (et *EwalletTopUp) TopUp() (*EwalletTopUpResponse, error) {
 		log.Println(err)
 	}
 
-	now := time.Now().Format(time.RFC3339)
+	now := oauth.GetTime()
 	method := "POST"
 	path := "/ewallet/topup"
 
+	// get access token.
+	accessToken, err := oauth.GetAccessToken()
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
 	headers := make(map[string]string)
-	headers["Authorization"] = "Bearer ..."
+	headers["Authorization"] = "Bearer " + accessToken
 	headers["Origin"] = "tokopedia.com"
 	headers["X-BCA-Key"] = utils.API_KEY
 	headers["X-BCA-Timestamp"] = now
-	headers["X-BCA-Signature"] = utils.GetSignature(method, path, "...", string(encoded), now)
+	headers["X-BCA-Signature"] = utils.GetSignature(method, path, accessToken, string(encoded), now)
 
 	agent := utils.NewHTTPRequest()
 	agent.Url = utils.API_URL
