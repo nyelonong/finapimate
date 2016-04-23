@@ -1,17 +1,21 @@
 package tx
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/nyelonong/finapimate/user"
+	"github.com/nyelonong/finapimate/utils"
 )
 
 const (
 	STATUS_REQUEST  = 1
 	STATUS_APPROVED = 2
 	STATUS_DECLINE  = 3
+	STATUS_PAID     = 4
 )
 
 type TxModule struct {
@@ -37,6 +41,40 @@ type Transaction struct {
 	Notes         string    `json:"notes,omitempty"      	db:"notes"`
 	CreateTime    time.Time `json:"create_time,omitempty"	db:"create_time"`
 	UserProfile   user.User `json:"user_profile"`
+}
+
+type EwalletPayment struct {
+	CompanyCode   string
+	PrimaryID     string
+	TransactionID string
+	ReferenceID   string
+	RequestDate   string
+	Amount        string
+	CurrencyCode  string
+}
+
+type EwalletPaymentResponse struct {
+	CompanyCode     string
+	TransactionID   string
+	ReferenceID     string
+	PaymentID       string
+	TransactionDate string
+}
+
+type EwalletTopUp struct {
+	CompanyCode    string
+	CustomerNumber string
+	TransactionID  string
+	RequestDate    string
+	Amount         string
+	CurrencyCode   string
+}
+
+type EwalletTopUpResponse struct {
+	CompanyCode     string
+	TransactionID   string
+	TopUpID         string
+	TransactionDate string
 }
 
 func (tm *TxModule) RequestBorrow(trxs []Transaction) error {
@@ -227,14 +265,89 @@ func (tm *TxModule) ChangeStatusTx(trxs []Transaction) error {
 	}
 
 	for _, trx := range trxs {
-		// usr.Status = status
-
 		if err := trx.Update(tx); err != nil {
 			log.Println(err)
 			if err := tx.Rollback(); err != nil {
 				log.Println(err)
 			}
 			return err
+		}
+
+		switch trx.Status {
+		case STATUS_APPROVED:
+			// Debit
+			debit := EwalletPayment{
+				CompanyCode:   utils.COMPANY_CODE,
+				PrimaryID:     fmt.Sprintf("%d", trx.LenderID),
+				TransactionID: fmt.Sprintf("%d", trx.ID),
+				ReferenceID:   fmt.Sprintf("%d-%d", trx.ID, trx.LenderID),
+				RequestDate:   time.Now().Format(time.RFC3339),
+				Amount:        fmt.Sprintf("%.2f", trx.Amount),
+				CurrencyCode:  "IDR",
+			}
+
+			if _, err := debit.Payment(); err != nil {
+				log.Println(err)
+				if err := tx.Rollback(); err != nil {
+					log.Println(err)
+				}
+				return err
+			}
+
+			// Credit
+			credit := EwalletTopUp{
+				CompanyCode:    utils.COMPANY_CODE,
+				CustomerNumber: fmt.Sprintf("%d", trx.BorrowerID),
+				TransactionID:  fmt.Sprintf("%d", trx.ID),
+				RequestDate:    time.Now().Format(time.RFC3339),
+				Amount:         fmt.Sprintf("%.2f", trx.Amount),
+				CurrencyCode:   "IDR",
+			}
+
+			if _, err := credit.TopUp(); err != nil {
+				log.Println(err)
+				if err := tx.Rollback(); err != nil {
+					log.Println(err)
+				}
+				return err
+			}
+		case STATUS_PAID:
+			// Debit
+			debit := EwalletPayment{
+				CompanyCode:   utils.COMPANY_CODE,
+				PrimaryID:     fmt.Sprintf("%d", trx.BorrowerID),
+				TransactionID: fmt.Sprintf("%d", trx.ID),
+				ReferenceID:   fmt.Sprintf("%d-%d", trx.ID, trx.LenderID),
+				RequestDate:   time.Now().Format(time.RFC3339),
+				Amount:        fmt.Sprintf("%.2f", trx.Amount),
+				CurrencyCode:  "IDR",
+			}
+
+			if _, err := debit.Payment(); err != nil {
+				log.Println(err)
+				if err := tx.Rollback(); err != nil {
+					log.Println(err)
+				}
+				return err
+			}
+
+			// Credit
+			credit := EwalletTopUp{
+				CompanyCode:    utils.COMPANY_CODE,
+				CustomerNumber: fmt.Sprintf("%d", trx.LenderID),
+				TransactionID:  fmt.Sprintf("%d", trx.ID),
+				RequestDate:    time.Now().Format(time.RFC3339),
+				Amount:         fmt.Sprintf("%.2f", trx.Amount),
+				CurrencyCode:   "IDR",
+			}
+
+			if _, err := credit.TopUp(); err != nil {
+				log.Println(err)
+				if err := tx.Rollback(); err != nil {
+					log.Println(err)
+				}
+				return err
+			}
 		}
 	}
 
@@ -262,4 +375,92 @@ func (trx *Transaction) Update(tx *sqlx.Tx) error {
 	}
 
 	return nil
+}
+
+func (ep *EwalletPayment) Payment() (*EwalletPaymentResponse, error) {
+	encoded, err := json.Marshal(ep)
+	if err != nil {
+		return nil, err
+		log.Println(err)
+	}
+
+	now := time.Now().Format(time.RFC3339)
+	method := "POST"
+	path := "/ewallet/payments"
+
+	headers := make(map[string]string)
+	headers["Authorization"] = "Bearer ..."
+	headers["Origin"] = "tokopedia.com"
+	headers["X-BCA-Key"] = utils.API_KEY
+	headers["X-BCA-Timestamp"] = now
+	headers["X-BCA-Signature"] = utils.GetSignature(method, path, "...", string(encoded), now)
+
+	agent := utils.NewHTTPRequest()
+	agent.Url = utils.API_URL
+	agent.Path = path
+	agent.Method = method
+	agent.IsJson = true
+	agent.Json = ep
+	agent.Headers = headers
+
+	body, err := agent.DoReq()
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	var resp EwalletPaymentResponse
+	if err := json.Unmarshal(*body, &resp); err != nil {
+		log.Println(err)
+		var errResp utils.Error
+		_ = json.Unmarshal(*body, &errResp)
+		log.Println(errResp)
+		return nil, err
+	}
+
+	return &resp, nil
+}
+
+func (et *EwalletTopUp) TopUp() (*EwalletTopUpResponse, error) {
+	encoded, err := json.Marshal(et)
+	if err != nil {
+		return nil, err
+		log.Println(err)
+	}
+
+	now := time.Now().Format(time.RFC3339)
+	method := "POST"
+	path := "/ewallet/topup"
+
+	headers := make(map[string]string)
+	headers["Authorization"] = "Bearer ..."
+	headers["Origin"] = "tokopedia.com"
+	headers["X-BCA-Key"] = utils.API_KEY
+	headers["X-BCA-Timestamp"] = now
+	headers["X-BCA-Signature"] = utils.GetSignature(method, path, "...", string(encoded), now)
+
+	agent := utils.NewHTTPRequest()
+	agent.Url = utils.API_URL
+	agent.Path = path
+	agent.Method = method
+	agent.IsJson = true
+	agent.Json = et
+	agent.Headers = headers
+
+	body, err := agent.DoReq()
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	var resp EwalletTopUpResponse
+	if err := json.Unmarshal(*body, &resp); err != nil {
+		log.Println(err)
+		var errResp utils.Error
+		_ = json.Unmarshal(*body, &errResp)
+		log.Println(errResp)
+		return nil, err
+	}
+
+	return &resp, nil
 }

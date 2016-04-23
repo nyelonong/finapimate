@@ -36,7 +36,8 @@ func (tm *TxModule) RequestBorrowHandler(res http.ResponseWriter, req *http.Requ
 }
 
 // input : tx_id
-// status : 2
+// status 2
+// amount
 func (tm *TxModule) ApproveBorrowHandler(res http.ResponseWriter, req *http.Request) {
 	var txData []Transaction
 
@@ -83,6 +84,34 @@ func (tm *TxModule) DeclineBorrowHandler(res http.ResponseWriter, req *http.Requ
 	if err := tm.ChangeStatusTx(txData); err != nil {
 		fmt.Println(err)
 		jsonapi.ErrorsWriter(res, 400, "Decline failed.")
+		return
+	}
+
+	jsonapi.SuccessWriter(res, txData)
+}
+
+// input : tx_id
+// status 4
+// amount
+func (tm *TxModule) PaymentHandler(res http.ResponseWriter, req *http.Request) {
+	var txData []Transaction
+
+	body, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		fmt.Println(err)
+		jsonapi.ErrorsWriter(res, 400, "Invalid Body Request.")
+		return
+	}
+
+	if err = json.Unmarshal([]byte(body), &txData); err != nil {
+		fmt.Println(err)
+		jsonapi.ErrorsWriter(res, 400, "Invalid JSON Request.")
+		return
+	}
+
+	if err := tm.ChangeStatusTx(txData); err != nil {
+		fmt.Println(err)
+		jsonapi.ErrorsWriter(res, 400, "Approve failed.")
 		return
 	}
 

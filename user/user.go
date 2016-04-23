@@ -1,11 +1,14 @@
 package user
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"strconv"
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/nyelonong/finapimate/utils"
 )
 
 const (
@@ -32,11 +35,11 @@ type User struct {
 	Name            string    `json:"name"                     db:"name"`
 	Password        string    `json:"password"                 db:"password"`
 	Gender          int       `json:"gender"                   db:"gender"`
-	BirthDate       int64     `json:"birth_date"               `
-	BirthDateValid  time.Time `json:"-"               		db:"birth_date"`
+	BirthDate       int64     `json:"birth_date"`
+	BirthDateValid  time.Time `db:"birth_date"`
 	NIK             string    `json:"nik"                      db:"nik"`
 	NIKValid        int       `json:"nik_valid,omitempty"      db:"nik_valid"`
-	MSISDN          string    `json:"msidn"                    db:"msisdn"`
+	MSISDN          string    `json:"msisdn"                   db:"msisdn"`
 	ThresholdAmount float64   `json:"th_amount"                db:"th_amount"`
 	CreateTime      time.Time `json:"create_time,omitempty"    db:"create_time"`
 	Photo           string    `json:"photo,omitempty"          db:"photo"`
@@ -50,6 +53,21 @@ type UserRelation struct {
 	CreateTime   time.Time `json:"create_time,omitempty"   db:"create_time"`
 	ApprovedTime time.Time `json:"approved_time"           db:"approved_time"`
 	UserProfile  User      `json:"user_profile,omitempty"`
+}
+
+type EwalletRegister struct {
+	CustomerName   string
+	DateOfBirth    string
+	PrimaryID      string
+	MobileNumber   string
+	EmailAddress   string
+	CompanyCode    string
+	CustomerNumber string
+}
+
+type EwalletRegisterResponse struct {
+	PrimaryID string
+	CompanyID string
 }
 
 func (um *UserModule) UserRegister(user User) error {
@@ -68,6 +86,24 @@ func (um *UserModule) UserRegister(user User) error {
 	}
 
 	if err := user.Insert(tx); err != nil {
+		log.Println(err)
+		if err := tx.Rollback(); err != nil {
+			log.Println(err)
+		}
+		return err
+	}
+
+	register := EwalletRegister{
+		CustomerName:   user.Name,
+		DateOfBirth:    time.Now().Format("2006-01-02"),
+		PrimaryID:      fmt.Sprintf("%d", user.ID),
+		MobileNumber:   user.MSISDN,
+		EmailAddress:   user.Email,
+		CompanyCode:    utils.COMPANY_CODE,
+		CustomerNumber: fmt.Sprintf("%d", user.ID),
+	}
+
+	if _, err := register.Register(); err != nil {
 		log.Println(err)
 		if err := tx.Rollback(); err != nil {
 			log.Println(err)
@@ -435,4 +471,48 @@ func (user *User) Get(um *UserModule) error {
 	}
 
 	return nil
+}
+
+func (er *EwalletRegister) Register() (*EwalletRegisterResponse, error) {
+	encoded, err := json.Marshal(er)
+	if err != nil {
+		return nil, err
+		log.Println(err)
+	}
+
+	now := time.Now().Format(time.RFC3339)
+	method := "POST"
+	path := "/ewallet/customers"
+
+	headers := make(map[string]string)
+	headers["Authorization"] = "Bearer ..."
+	headers["Origin"] = "tokopedia.com"
+	headers["X-BCA-Key"] = utils.API_KEY
+	headers["X-BCA-Timestamp"] = now
+	headers["X-BCA-Signature"] = utils.GetSignature(method, path, "...", string(encoded), now)
+
+	agent := utils.NewHTTPRequest()
+	agent.Url = utils.API_URL
+	agent.Path = path
+	agent.Method = method
+	agent.IsJson = true
+	agent.Json = er
+	agent.Headers = headers
+
+	body, err := agent.DoReq()
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	var resp EwalletRegisterResponse
+	if err := json.Unmarshal(*body, &resp); err != nil {
+		log.Println(err)
+		var errResp utils.Error
+		_ = json.Unmarshal(*body, &errResp)
+		log.Println(errResp)
+		return nil, err
+	}
+
+	return &resp, nil
 }

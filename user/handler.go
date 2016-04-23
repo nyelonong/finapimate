@@ -163,7 +163,7 @@ func (um *UserModule) FriendRequesthandler(res http.ResponseWriter, req *http.Re
 }
 
 // input: userid
-func (um *UserModule) ListFriendHandler(w http.ResponseWriter, r *http.Request){
+func (um *UserModule) ListFriendHandler(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		fmt.Println(err)
