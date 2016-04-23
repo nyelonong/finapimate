@@ -93,7 +93,7 @@ func (tm *TxModule) DeclineBorrowHandler(res http.ResponseWriter, req *http.Requ
 // input : tx_id
 // status 4
 // amount
-func (tm *TxModule) PaymentHandler(res http.ResponseWriter, req *http.Request) {
+func (tm *TxModule) PaymentBorrowHandler(res http.ResponseWriter, req *http.Request) {
 	var txData []Transaction
 
 	body, err := ioutil.ReadAll(req.Body)

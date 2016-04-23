@@ -48,6 +48,7 @@ func main() {
 	http.HandleFunc("/v1/tx/request", TxModule.RequestBorrowHandler)
 	http.HandleFunc("/v1/tx/approve", TxModule.ApproveBorrowHandler)
 	http.HandleFunc("/v1/tx/decline", TxModule.DeclineBorrowHandler)
+	http.HandleFunc("/v1/tx/payment", TxModule.PaymentBorrowHandler)
 
 	// Notif
 	http.HandleFunc("/v1/tx/notif", TxModule.NotifBorrowHandler)
