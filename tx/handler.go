@@ -2,9 +2,10 @@ package tx
 
 import (
 	"fmt"
-
+	"strconv"
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"net/http"
 
 	"github.com/nyelonong/finapimate/utils/jsonapi"
@@ -222,4 +223,51 @@ func (tm *TxModule) TopUpHandler(res http.ResponseWriter, req *http.Request) {
 	}
 
 	jsonapi.SuccessWriter(res, data)
+}
+
+func (tm *TxModule) NotifBorrowWebviewHandler(w http.ResponseWriter, r *http.Request){
+	r.ParseForm()
+	uid, err := strconv.Atoi(r.Form.Get("user_id"))
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	txData := Transaction{
+		LenderID: int64(uid),
+	}
+
+	datas, err := tm.NotifBorrow(txData)
+	if err != nil {
+		fmt.Println(err)
+		jsonapi.ErrorsWriter(w, 400, "Not found.")
+		return
+	}
+
+	data := struct {
+		List []Transaction
+	}{
+		List: datas,
+	}
+
+	// jsonapi.SuccessWriter(w, datas)
+	err = tm.renderTemplate(w, r, "listBorrower", data)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	return
+}
+
+func (tm *TxModule) renderTemplate(w http.ResponseWriter, r *http.Request, tname string, data interface{}) error {
+
+	template := tm.templates.Lookup(tname)
+	if template != nil {
+		err := template.Execute(w, data)
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+	}
+	return nil
 }

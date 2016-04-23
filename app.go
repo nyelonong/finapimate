@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"html/template"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
@@ -28,8 +29,11 @@ func init() {
 
 	log.SetFlags(log.Lshortfile)
 
+	// parse all html files.
+	templates := template.Must(template.New("").ParseGlob("files/*.html"))
+
 	UserModule = user.NewUserModule(db)
-	TxModule = tx.NewTxModule(db, UserModule)
+	TxModule = tx.NewTxModule(db, UserModule, templates)
 
 	// Construct and implicitly start scheduler.
 	if config.Scheduler.Run {
@@ -62,6 +66,9 @@ func main() {
 	// History
 	http.HandleFunc("/v1/tx/list/borrow", TxModule.BorrowListHandler)
 	http.HandleFunc("/v1/tx/list/lend", TxModule.LendListHandler)
+
+	// webview.
+	http.HandleFunc("/v1/tx/notif/webview", TxModule.NotifBorrowWebviewHandler)
 
 	// Testing.
 	http.HandleFunc("/token", user.TestToken)
