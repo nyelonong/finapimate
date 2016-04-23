@@ -7,11 +7,13 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"github.com/nyelonong/finapimate/tx"
 	"github.com/nyelonong/finapimate/user"
 	"github.com/nyelonong/finapimate/utils"
 )
 
 var UserModule *user.UserModule
+var TxModule *tx.TxModule
 
 func init() {
 	config, err := utils.NewConfig("files/config.ini")
@@ -25,13 +27,15 @@ func init() {
 	}
 
 	log.SetFlags(log.Lshortfile)
-	
+
 	UserModule = user.NewUserModule(db)
+	TxModule = tx.NewTxModule(db, UserModule)
 }
 
 func main() {
 	fmt.Println("FINMATE STARTED")
 
+	// User
 	http.HandleFunc("/v1/user/register", UserModule.RegisterHandler)
 	http.HandleFunc("/v1/user/login", UserModule.LoginHandler)
 	http.HandleFunc("/v1/user/friend/search", UserModule.SearchFriendHandler)
@@ -39,6 +43,18 @@ func main() {
 	http.HandleFunc("/v1/user/friend/request", UserModule.FriendRequesthandler)
 	http.HandleFunc("/v1/user/friend/approve", UserModule.ApproveFriendshandler)
 	http.HandleFunc("/v1/user/friend/list", UserModule.ListFriendHandler)
+
+	// Tx
+	http.HandleFunc("/v1/tx/request", TxModule.RequestBorrowHandler)
+	http.HandleFunc("/v1/tx/approve", TxModule.ApproveBorrowHandler)
+	http.HandleFunc("/v1/tx/decline", TxModule.DeclineBorrowHandler)
+
+	// Notif
+	http.HandleFunc("/v1/tx/notif", TxModule.NotifBorrowHandler)
+
+	// History
+	http.HandleFunc("/v1/tx/list/borrow", TxModule.BorrowListHandler)
+	http.HandleFunc("/v1/tx/list/lend", TxModule.LendListHandler)
 
 	log.Fatal(http.ListenAndServe(":8005", nil))
 }

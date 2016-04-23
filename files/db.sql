@@ -35,6 +35,7 @@ CREATE TABLE fm_tx (
   dealine       DATE            NOT NULL,
   status        INTEGER         NOT NULL,
   create_time   TIMESTAMP       NOT NULL,
+  update_time   TIMESTAMP,
   notes         VARCHAR(512),
   PRIMARY KEY (tx_id)
 );

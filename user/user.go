@@ -1,7 +1,6 @@
 package user
 
 import (
-	"fmt"
 	"log"
 	"strconv"
 	"time"
@@ -33,7 +32,8 @@ type User struct {
 	Name            string    `json:"name"                     db:"name"`
 	Password        string    `json:"password"                 db:"password"`
 	Gender          int       `json:"gender"                   db:"gender"`
-	BirthDate       time.Time `json:"birth_date"               db:"birth_date"`
+	BirthDate       int64     `json:"birth_date"               `
+	BirthDateValid  time.Time `json:"-"               		db:"birth_date"`
 	NIK             string    `json:"nik"                      db:"nik"`
 	NIKValid        int       `json:"nik_valid,omitempty"      db:"nik_valid"`
 	MSISDN          string    `json:"msidn"                    db:"msisdn"`
@@ -53,12 +53,13 @@ type UserRelation struct {
 }
 
 func (um *UserModule) UserRegister(user User) error {
-	if !user.ValidateNIK() {
-		return fmt.Errorf("NIK is not valid.")
-	}
+	// if !user.ValidateNIK() {
+	// 	return fmt.Errorf("NIK is not valid.")
+	// }
 
 	user.NIKValid = 0
 	user.ThresholdAmount = 100000
+	user.BirthDateValid = time.Unix(user.BirthDate, 0)
 
 	tx, err := um.DBConn.Beginx()
 	if err != nil {
@@ -120,7 +121,7 @@ func (user *User) Insert(tx *sqlx.Tx) error {
 func (user *User) ValidateNIK() bool {
 	nik := user.NIK
 	gender := user.Gender
-	year, month, day := user.BirthDate.Date()
+	year, month, day := user.BirthDateValid.Date()
 
 	// Default length of NIK is 16 digits
 	if len(nik) != 16 {
