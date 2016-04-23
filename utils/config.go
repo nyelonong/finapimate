@@ -7,10 +7,15 @@ import (
 
 type GConfig struct {
 	Database DatabaseConfig
+	Scheduler SchedulerConfig
 }
 
 type DatabaseConfig struct {
 	Finmate string
+}
+
+type SchedulerConfig struct {
+	Run bool
 }
 
 var ConfigG *GConfig
