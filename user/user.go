@@ -232,7 +232,7 @@ func (user *User) UserLogin(um *UserModule) error {
 
 	usr := EwalletInquiry{
 		CompanyCode: utils.COMPANY_CODE,
-		PrimaryID:   fmt.Sprintf("%d", user.ID),
+		PrimaryID:   fmt.Sprintf("%s", user.Email),
 	}
 
 	ewallet, err := usr.Inquiry()
@@ -559,16 +559,23 @@ func (er *EwalletRegister) Register() (*EwalletRegisterResponse, error) {
 }
 
 func (ei *EwalletInquiry) Inquiry() (*EwalletInquiryResponse, error) {
-	now := time.Now().Format(time.RFC3339)
+	now := oauth.GetTime()
 	method := "GET"
-	path := "/ewallet/customers" + ei.CompanyCode + "/" + ei.PrimaryID
+	path := "/ewallet/customers/" + ei.CompanyCode + "/" + ei.PrimaryID
+
+	// get access token.
+	accessToken, err := oauth.GetAccessToken()
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
 
 	headers := make(map[string]string)
-	headers["Authorization"] = "Bearer ..."
+	headers["Authorization"] = "Bearer " + accessToken
 	headers["Origin"] = "tokopedia.com"
 	headers["X-BCA-Key"] = utils.API_KEY
 	headers["X-BCA-Timestamp"] = now
-	headers["X-BCA-Signature"] = utils.GetSignature(method, path, "...", "", now)
+	headers["X-BCA-Signature"] = utils.GetSignature(method, path, accessToken, "", now)
 
 	agent := utils.NewHTTPRequest()
 	agent.Url = utils.API_URL
