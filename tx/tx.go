@@ -299,8 +299,8 @@ func (tm *TxModule) ChangeStatusTx(trxs []Transaction) error {
 			debit := EwalletPayment{
 				CompanyCode:   utils.COMPANY_CODE,
 				PrimaryID:     lender.Email,
-				TransactionID: fmt.Sprintf("%d", trx.ID),
-				ReferenceID:   fmt.Sprintf("%d-%d", trx.ID, trx.LenderID),
+				TransactionID: fmt.Sprintf("%d", time.Now().Unix()),
+				ReferenceID:   fmt.Sprintf("%d%d", trx.ID, time.Now().Unix()),
 				RequestDate:   oauth.GetTime(),
 				Amount:        fmt.Sprintf("%.2f", trx.Amount),
 				CurrencyCode:  "IDR",
@@ -318,7 +318,7 @@ func (tm *TxModule) ChangeStatusTx(trxs []Transaction) error {
 			credit := EwalletTopUp{
 				CompanyCode:    utils.COMPANY_CODE,
 				CustomerNumber: fmt.Sprintf("%d", trx.BorrowerID),
-				TransactionID:  fmt.Sprintf("%d", trx.ID),
+				TransactionID:  fmt.Sprintf("%d", time.Now().Unix()),
 				RequestDate:    oauth.GetTime(),
 				Amount:         fmt.Sprintf("%.2f", trx.Amount),
 				CurrencyCode:   "IDR",
@@ -333,7 +333,7 @@ func (tm *TxModule) ChangeStatusTx(trxs []Transaction) error {
 			}
 		case STATUS_PAID:
 			borrower := user.User{
-				ID: trx.LenderID,
+				ID: trx.BorrowerID,
 			}
 			if err := borrower.Get(tm.UserModule); err != nil {
 				log.Println(err)
@@ -344,8 +344,8 @@ func (tm *TxModule) ChangeStatusTx(trxs []Transaction) error {
 			debit := EwalletPayment{
 				CompanyCode:   utils.COMPANY_CODE,
 				PrimaryID:     borrower.Email,
-				TransactionID: fmt.Sprintf("%d", trx.ID),
-				ReferenceID:   fmt.Sprintf("%d-%d", trx.ID, trx.LenderID),
+				TransactionID: fmt.Sprintf("%d", time.Now().Unix()),
+				ReferenceID:   fmt.Sprintf("%d%d", trx.ID, time.Now().Unix()),
 				RequestDate:   oauth.GetTime(),
 				Amount:        fmt.Sprintf("%.2f", trx.Amount),
 				CurrencyCode:  "IDR",
@@ -363,7 +363,7 @@ func (tm *TxModule) ChangeStatusTx(trxs []Transaction) error {
 			credit := EwalletTopUp{
 				CompanyCode:    utils.COMPANY_CODE,
 				CustomerNumber: fmt.Sprintf("%d", trx.LenderID),
-				TransactionID:  fmt.Sprintf("%d", trx.ID),
+				TransactionID:  fmt.Sprintf("%d", time.Now().Unix()),
 				RequestDate:    oauth.GetTime(),
 				Amount:         fmt.Sprintf("%.2f", trx.Amount),
 				CurrencyCode:   "IDR",
@@ -534,9 +534,11 @@ func (top TopUp) UserTopUp(tm *TxModule) error {
 		CurrencyCode:   "IDR",
 	}
 
-	if _, err := user.TopUp(); err != nil {
+	if resp, err := user.TopUp(); err != nil {
 		log.Println(err)
 		return err
+	} else {
+		fmt.Printf("%+v\n", resp)
 	}
 
 	return nil

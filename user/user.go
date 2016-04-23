@@ -212,6 +212,7 @@ func (user *User) ValidateNIK() bool {
 func (user *User) UserLogin(um *UserModule) error {
 	query := `
         SELECT
+			user_id,
 			email,
             name,
             gender,
