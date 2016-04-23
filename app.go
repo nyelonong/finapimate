@@ -30,6 +30,11 @@ func init() {
 
 	UserModule = user.NewUserModule(db)
 	TxModule = tx.NewTxModule(db, UserModule)
+
+	// Construct and implicitly start scheduler.
+	if config.Scheduler.Run {
+		tx.NewScheduler("@every 5s", TxModule)
+	}
 }
 
 func main() {
