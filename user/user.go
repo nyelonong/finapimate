@@ -114,7 +114,7 @@ func (um *UserModule) UserRegister(user User) error {
 	register := EwalletRegister{
 		CustomerName:   user.Name,
 		DateOfBirth:    time.Now().Format("2006-01-02"),
-		PrimaryID:      fmt.Sprintf("%d", user.Email),
+		PrimaryID:      user.Email,
 		MobileNumber:   user.MSISDN,
 		EmailAddress:   user.Email,
 		CompanyCode:    utils.COMPANY_CODE,
