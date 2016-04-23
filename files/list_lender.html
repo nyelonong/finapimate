@@ -1,0 +1,12 @@
+{{define "listLender"}}
+<html>
+	<body>
+		{{range .List}}
+		<div>
+			LenderID: {{.LenderID}}
+			Amount: {{.Amount}}
+		</div>
+		{{end}}
+	</body>
+</html>
+{{end}}

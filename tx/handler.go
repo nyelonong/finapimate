@@ -146,6 +146,39 @@ func (tm *TxModule) BorrowListHandler(res http.ResponseWriter, req *http.Request
 	jsonapi.SuccessWriter(res, datas)
 }
 
+func (tm *TxModule) BorrowListWebviewHandler(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	uid, err := strconv.Atoi(r.Form.Get("user_id")) // this is borrower id.
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	txData := Transaction{
+		BorrowerID: int64(uid),
+	}
+
+	datas, err := tm.ListBorrow(txData)
+	if err != nil {
+		log.Println(err)
+		jsonapi.ErrorsWriter(w, 400, "Error Server.")
+		return
+	}
+
+	data := struct {
+		List []Transaction
+	}{
+		List: datas,
+	}
+
+	err = tm.renderTemplate(w, r, "listLender", data)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	return
+}
+
 // input : lender_id
 func (tm *TxModule) LendListHandler(res http.ResponseWriter, req *http.Request) {
 	var txData Transaction
