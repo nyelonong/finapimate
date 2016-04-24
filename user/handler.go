@@ -198,3 +198,29 @@ func TestToken(w http.ResponseWriter, r *http.Request) {
 	jsonapi.SuccessWriter(w, token)
 	return
 }
+
+func (um *UserModule) UserInquiryHandler(res http.ResponseWriter, req *http.Request) {
+	var data User
+
+	body, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		fmt.Println(err)
+		jsonapi.ErrorsWriter(res, 400, "Invalid Body Request.")
+		return
+	}
+
+	if err = json.Unmarshal([]byte(body), &data); err != nil {
+		fmt.Println(err)
+		jsonapi.ErrorsWriter(res, 400, "Invalid JSON Request.")
+		return
+	}
+
+	dataInfo, err := um.UserInquiry(data)
+	if err != nil {
+		fmt.Println(err)
+		jsonapi.ErrorsWriter(res, 400, "Failed approve friends.")
+		return
+	}
+
+	jsonapi.SuccessWriter(res, dataInfo)
+}

@@ -138,11 +138,11 @@ func (r *Request) DoReq() (*[]byte, error) {
 }
 
 func printErrorBody(resp *http.Response) {
-	content, err := ioutil.ReadAll(resp.Body)
+	_, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	log.Println(string(content))
+
 	return
 }

@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
-	"html/template"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
@@ -52,6 +52,7 @@ func main() {
 	http.HandleFunc("/v1/user/friend/request", UserModule.FriendRequesthandler)
 	http.HandleFunc("/v1/user/friend/approve", UserModule.ApproveFriendshandler)
 	http.HandleFunc("/v1/user/friend/list", UserModule.ListFriendHandler)
+	http.HandleFunc("/v1/user/inquiry", UserModule.UserInquiryHandler)
 
 	// Tx
 	http.HandleFunc("/v1/tx/request", TxModule.RequestBorrowHandler)

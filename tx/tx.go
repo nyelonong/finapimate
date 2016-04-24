@@ -3,9 +3,9 @@ package tx
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"log"
 	"time"
-	"html/template"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/nyelonong/finapimate/oauth"
@@ -23,14 +23,14 @@ const (
 type TxModule struct {
 	DBConn     *sqlx.DB
 	UserModule *user.UserModule
-	templates *template.Template
+	templates  *template.Template
 }
 
 func NewTxModule(db *sqlx.DB, um *user.UserModule, t *template.Template) *TxModule {
 	return &TxModule{
 		DBConn:     db,
 		UserModule: um,
-		templates: t,
+		templates:  t,
 	}
 }
 
@@ -95,6 +95,7 @@ func (tm *TxModule) RequestBorrow(trxs []Transaction) error {
 
 	for _, trx := range trxs {
 		trx.DeadlineValid = time.Unix(trx.Deadline, 0)
+		trx.Status = STATUS_REQUEST
 		if err := trx.Insert(tx); err != nil {
 			log.Println(err)
 			if err := tx.Rollback(); err != nil {
@@ -144,6 +145,7 @@ func (tm *TxModule) ListBorrow(trx Transaction) ([]Transaction, error) {
 
 	query := `
         SELECT
+			tx_id,
 			lender_id,
 			borrower_id,
 			amount,
@@ -153,9 +155,10 @@ func (tm *TxModule) ListBorrow(trx Transaction) ([]Transaction, error) {
 			create_time
         FROM fm_tx
         WHERE borrower_id = $1
+		AND status = $2
     `
 
-	rows, err := tm.DBConn.Queryx(query, trx.BorrowerID)
+	rows, err := tm.DBConn.Queryx(query, trx.BorrowerID, STATUS_APPROVED)
 	if err != nil {
 		log.Println(err)
 		return data, err
@@ -186,6 +189,7 @@ func (tm *TxModule) ListLend(trx Transaction) ([]Transaction, error) {
 
 	query := `
         SELECT
+			tx_id,
 			lender_id,
 			borrower_id,
 			amount,
@@ -228,6 +232,7 @@ func (tm *TxModule) NotifBorrow(trx Transaction) ([]Transaction, error) {
 
 	query := `
         SELECT
+			tx_id,
 			lender_id,
 			borrower_id,
 			amount,

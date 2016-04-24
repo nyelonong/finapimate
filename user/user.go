@@ -88,6 +88,22 @@ type EwalletInquiryResponse struct {
 	EmailAddress   string
 }
 
+type EwalletTopUp struct {
+	CompanyCode    string
+	CustomerNumber string
+	TransactionID  string
+	RequestDate    string
+	Amount         string
+	CurrencyCode   string
+}
+
+type EwalletTopUpResponse struct {
+	CompanyCode     string
+	TransactionID   string
+	TopUpID         string
+	TransactionDate string
+}
+
 func (um *UserModule) UserRegister(user User) error {
 	// if !user.ValidateNIK() {
 	// 	return fmt.Errorf("NIK is not valid.")
@@ -128,6 +144,22 @@ func (um *UserModule) UserRegister(user User) error {
 		}
 		return err
 	}
+
+	// usr := EwalletTopUp{
+	// 	CompanyCode:    utils.COMPANY_CODE,
+	// 	CustomerNumber: fmt.Sprintf("%d", user.ID),
+	// 	TransactionID:  fmt.Sprintf("%d", time.Now().Unix()),
+	// 	RequestDate:    oauth.GetTime(),
+	// 	Amount:         fmt.Sprintf("%.2f", 10000),
+	// 	CurrencyCode:   "IDR",
+	// }
+	//
+	// if resp, err := usr.TopUp(); err != nil {
+	// 	log.Println(err)
+	// 	return err
+	// } else {
+	// 	fmt.Printf("%+v\n", resp)
+	// }
 
 	if err := tx.Commit(); err != nil {
 		log.Println(err)
@@ -593,6 +625,80 @@ func (ei *EwalletInquiry) Inquiry() (*EwalletInquiryResponse, error) {
 	}
 
 	var resp EwalletInquiryResponse
+	if err := json.Unmarshal(*body, &resp); err != nil {
+		log.Println(err)
+		var errResp utils.Error
+		_ = json.Unmarshal(*body, &errResp)
+		log.Println(errResp)
+		return nil, err
+	}
+
+	return &resp, nil
+}
+
+func (um *UserModule) UserInquiry(user User) (*User, error) {
+	fmt.Printf("%+v\n", user)
+	if err := user.Get(um); err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	inq := EwalletInquiry{
+		CompanyCode: utils.COMPANY_CODE,
+		PrimaryID:   user.Email,
+	}
+
+	resp, err := inq.Inquiry()
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	user.Ewallet = *resp
+
+	return &user, nil
+}
+
+func (et *EwalletTopUp) TopUp() (*EwalletTopUpResponse, error) {
+	encoded, err := json.Marshal(et)
+	if err != nil {
+		return nil, err
+		log.Println(err)
+	}
+
+	now := oauth.GetTime()
+	method := "POST"
+	path := "/ewallet/topup"
+
+	// get access token.
+	accessToken, err := oauth.GetAccessToken()
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	headers := make(map[string]string)
+	headers["Authorization"] = "Bearer " + accessToken
+	headers["Origin"] = "tokopedia.com"
+	headers["X-BCA-Key"] = utils.API_KEY
+	headers["X-BCA-Timestamp"] = now
+	headers["X-BCA-Signature"] = utils.GetSignature(method, path, accessToken, string(encoded), now)
+
+	agent := utils.NewHTTPRequest()
+	agent.Url = utils.API_URL
+	agent.Path = path
+	agent.Method = method
+	agent.IsJson = true
+	agent.Json = et
+	agent.Headers = headers
+
+	body, err := agent.DoReq()
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	var resp EwalletTopUpResponse
 	if err := json.Unmarshal(*body, &resp); err != nil {
 		log.Println(err)
 		var errResp utils.Error

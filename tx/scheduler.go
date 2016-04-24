@@ -257,6 +257,14 @@ func (s *Scheduler) notify() {
 		return
 	}
 
+	for i, _ := range trxs {
+		trxs[i].Status = STATUS_PAID
+	}
+
+	if err := s.txm.ChangeStatusTx(trxs); err != nil {
+		return
+	}
+
 	// TODO: send notification.
 	for _, trx := range trxs {
 		usr := user.User{
@@ -277,9 +285,8 @@ func (s *Scheduler) notify() {
 
 		m := gomail.NewMessage()
 		m.SetHeader("From", "syahastatan@yahoo.com")
-		m.SetHeader("To", usr.Email)
+		m.SetHeader("To", usr.Email, lender.Email)
 		m.SetHeader("Subject", "Deadline")
-		// m.SetBody("text/plain", fmt.Sprintf("Borrowed %.0f from %s, deadline %s", trx.Amount, usr.Name, time.Unix(trx.Deadline, 0)))
 		m.SetBody("text/html", emailTemplate)
 
 		d := gomail.Dialer{
@@ -294,7 +301,6 @@ func (s *Scheduler) notify() {
 			log.Println(err)
 		}
 
-		log.Println(usr)
 	}
 
 	return

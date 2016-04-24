@@ -6,6 +6,12 @@
 			Borrower ID: {{.BorrowerID}}
 			LenderID: {{.LenderID}}
 			Amount: {{.Amount}}
+			<form action="/v1/wv/tx/approve" method="post">
+				<input type="submit" value="Approve">
+			</form>
+			<form action="/v1/wv/tx/decline" method="post">
+				<input type="submit" value="Decline">
+			</form>
 		</div>
 		{{end}}
 	</body>
