@@ -2,16 +2,29 @@ package utils
 
 import (
 	"fmt"
+	"log"
+
 	"gopkg.in/gcfg.v1"
 )
 
 type GConfig struct {
-	Database DatabaseConfig
+	Database  DatabaseConfig
 	Scheduler SchedulerConfig
+	Token     TokenConfig
+}
+
+type TokenConfig struct {
+	VerifyToken string
+	Verify      bool
+	PageToken   string
+	AccessToken string
+	PageID      string
 }
 
 type DatabaseConfig struct {
-	Finmate string
+	Order   string
+	User    string
+	Payment string
 }
 
 type SchedulerConfig struct {
@@ -26,6 +39,7 @@ func NewConfig(filePath string) (*GConfig, error) {
 
 		err := gcfg.ReadFileInto(&c, filePath)
 		if err != nil {
+			log.Println(err)
 			return nil, fmt.Errorf("Could not find configuration file")
 		}
 
